@@ -7,6 +7,7 @@ import ij.ImageStack;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
+import ij.plugin.filter.GaussianBlur;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ public class Circular_Hough implements PlugInFilter{
         temp.findEdges();
         new ImagePlus("", temp).show();
 
-        List<ImageProcessor> circleList= new ArrayList<>();
+        List<ImageProcessor> circleList= new ArrayList<ImageProcessor>();
         for (int index = 0; index < pMax - pMin; index++){
             circleList.add(temp.duplicate());
         }
@@ -60,7 +61,7 @@ public class Circular_Hough implements PlugInFilter{
 
             for (int i = 0; i < temp.getHeight(); i++){
                 for (int j = 0; j < temp.getWidth(); j++){
-                    if (tempProcessor.get(j, i) > 3.2 * (index + pMin) && tempProcessor.get(j, i) < 100){
+                    if (tempProcessor.get(j, i) > 3.3 * (index + pMin) && tempProcessor.get(j, i) < 100){
                         showTestProcessor.set(j, i, 255);
                         drawCircle(result, j, i, index+pMin, 200);
                     }
@@ -80,7 +81,7 @@ public class Circular_Hough implements PlugInFilter{
 
     }
 
-    private void incrementCircle(ImageProcessor p, int u, int v, int r) {
+    public static void incrementCircle(ImageProcessor p, int u, int v, int r) {
 
         int x = 0;
         int y = r;
