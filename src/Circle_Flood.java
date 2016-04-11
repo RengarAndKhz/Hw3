@@ -26,7 +26,7 @@ public class Circle_Flood implements PlugInFilter{
         //ImageConverter ic = new ImageConverter(new ImagePlus("", imp));
         ic.convertToGray8();
         ImageProcessor imageProcessor = imp.getProcessor().duplicate();
-        imageProcessor.threshold(90);
+        imageProcessor.threshold(80);
         new ImagePlus("", imageProcessor).show();
     }
 

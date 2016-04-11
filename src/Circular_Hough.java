@@ -28,16 +28,7 @@ public class Circular_Hough implements PlugInFilter{
         ic.convertToGray8();
         ImageProcessor temp = imp.getProcessor().duplicate();
         ImageProcessor result = imp.getProcessor().duplicate();
-        for (int i = 0; i < temp.getHeight(); i++){
-            for (int j = 0; j < temp.getWidth(); j++){
-                if (temp.get(j, i) > 90){
-                    temp.putPixel(j, i, 255);
-                }
-                else{
-                    temp.putPixel(j, i, 0);
-                }
-            }
-        }
+        temp.threshold(80);
         temp.findEdges();
         new ImagePlus("", temp).show();
 
