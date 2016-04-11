@@ -21,50 +21,67 @@ public class Circle_Flood implements PlugInFilter{
     public int setup(String s, ImagePlus imagePlus) {
         return DOES_ALL;
     }
-
-    @Override
-    public void run(ImageProcessor imageProcessor) {
-        List<CircleInfo> dataFromCircularHough = circularHough();
-    }
-
     /**
      * main method of cirle flood algorithm
      * the background of the binary image is 0 and the foreground is 255
      * the value of the circle which split the resgions is 200
-     * @param choosingFlag
-     * @param dataFromCircularHough
+     * @param
+     * @param
      * @return
      */
-    public ImageProcessor circleFlood(boolean choosingFlag, List<CircleInfo> dataFromCircularHough){
-        if (choosingFlag == true){
-
-        }
-        else{
-
-        }
+    @Override
+    public void run(ImageProcessor imageProcessor) {
+        List<CircleInfo> dataFromCircularHough = circularHough();
+        ImagePlus imp = IJ.getImage();
+        ImageConverter ic = new ImageConverter(imp);
+        ic.convertToGray8();
+        imageProcessor = imp.getProcessor().duplicate();
+        imageProcessor.threshold(80);
+        ImageProcessor binaryImageProcessor = imageProcessor.duplicate();
+        new ImagePlus("bianry image", binaryImageProcessor).show();
+        int result = recursveFloodFill(binaryImageProcessor, dataFromCircularHough);
+        new ImagePlus(Integer.toString(result), binaryImageProcessor).show();
     }
+
+
 
     /**
      * naive recursive flood fill algorithm to fill the regions
      * @param imageProcessor
      * @return
      */
-    public ImageProcessor recursveFloodFill(ImageProcessor imageProcessor, List<CircleInfo> dataFromCircularHough){
+    public int recursveFloodFill(ImageProcessor imageProcessor, List<CircleInfo> dataFromCircularHough){
         int label = 1; // initial the value of the next label to be assigned
-        for (int i = 0; i < imageProcessor.getWidth(); i++){
-            for (int j = 0; j < imageProcessor.getHeight(); j++){
-
-
+        for (CircleInfo curr : dataFromCircularHough){
+            for (int i = 0; i < imageProcessor.getWidth(); i++){
+                for (int j = 0; j < imageProcessor.getHeight(); j++){
+                    if (imageProcessor.get(i, j)  != 0 && isInCircle(i, j, curr)){
+                        floodFill(imageProcessor, i, j, label, curr);
+                        label++;
+                    }
+                }
             }
         }
+        return label;
+    }
+
+    public void floodFill(ImageProcessor imageProcessor, int i, int j, int label, CircleInfo info){
+        if (isInCircle(i, j, info) && imageProcessor.get(i, j) == 255){
+            imageProcessor.set(i, j, label);
+            floodFill(imageProcessor, i+1, j, label, info);
+            floodFill(imageProcessor, i, j+1, label, info);
+            floodFill(imageProcessor, i, j-1, label, info);
+            floodFill(imageProcessor, i-1, j, label, info);
+        }
+        return;
     }
 
     /**
      * the Coherence method to fill the regions
-     * @param imageProcessor
+     * @param
      * @return
      */
-    public ImageProcessor coherenceMethod(ImageProcessor imageProcessor){}
+    //public ImageProcessor coherenceMethod(ImageProcessor imageProcessor){}
 
     public List<CircleInfo> circularHough(){
         List<CircleInfo> resultList = new ArrayList<CircleInfo>();
@@ -76,9 +93,9 @@ public class Circle_Flood implements PlugInFilter{
         ImageProcessor result = imp.getProcessor().duplicate();
         imageProcessor.threshold(80);
         ImageProcessor binaryImageProcessor = imageProcessor.duplicate();
-        new ImagePlus("Binary image", binaryImageProcessor).show();
+        //new ImagePlus("Binary image", binaryImageProcessor).show();
         imageProcessor.findEdges();
-        new ImagePlus("edges", imageProcessor).show();
+        //new ImagePlus("edges", imageProcessor).show();
         List<ImageProcessor> rList = new ArrayList<ImageProcessor>();
         for (int i = 0; i < pMax - pMin; i++){
             rList.add(imageProcessor.duplicate());
@@ -102,7 +119,7 @@ public class Circle_Flood implements PlugInFilter{
             ImageProcessor temProcessor = rList.get(i);
             rStack.addSlice(temProcessor);
         }
-        new ImagePlus("different circles", rStack).show();
+        //new ImagePlus("different circles", rStack).show();
 
         for (int index = 0; index < pMax - pMin; index++){
             ImageProcessor tempForDrawingCircle = rStack.getProcessor(index + 1);
@@ -116,8 +133,26 @@ public class Circle_Flood implements PlugInFilter{
                 }
             }
         }
-        new ImagePlus("result", binaryImageProcessor).show();
+        //new ImagePlus("result", binaryImageProcessor).show();
         return resultList;
+
+    }
+
+    /**
+     * detect if the pixel is in the circle
+     * @param i
+     * @param j
+     * @param info
+     * @return boolean type
+     */
+    public boolean isInCircle(int i, int j, CircleInfo info){
+        int w = info.getI();
+        int h = info.getJ();
+        int radi = info.getRadi();
+        if ((i - w) * (i - w) + (j - h) * (j - h) <= radi * radi){
+            return true;
+        }
+        else return false;
 
     }
 
