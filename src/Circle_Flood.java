@@ -7,8 +7,6 @@ import ij.ImageStack;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
-import ij.plugin.filter.GaussianBlur;
-import ij.process.ImageStatistics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -44,7 +42,7 @@ public class Circle_Flood implements PlugInFilter{
             new ImagePlus(Integer.toString(result), binaryImageProcessor).show();
         }
         else {
-            coherenceMethod(binaryImageProcessor);
+            coherenceMethod(binaryImageProcessor, dataFromCircularHough);
             new ImagePlus("coherence method", binaryImageProcessor).show();
         }
     }
@@ -87,74 +85,59 @@ public class Circle_Flood implements PlugInFilter{
      * @param
      * @return
      */
-    public void coherenceMethod(ImageProcessor imageProcessor){
-
-        int label = 1; //initiate the value of label
-        for (int i = 0; i < imageProcessor.getWidth(); i++){
-            for (int j = 0; j < imageProcessor.getHeight(); j++){
-                //search the seed in the whole pic
-                if (imageProcessor.get(i, j) == 255){
-                    Stack<Pair<Integer, Integer>> stack = new Stack<Pair<Integer, Integer>>();
-                    // put the original seed in the stack
-                    stack.add(new Pair<Integer, Integer>(i, j));
-                    while (!stack.isEmpty()){
-                        Pair<Integer, Integer> currPair = stack.pop();
-                        doCoherenceFilling(currPair, stack, imageProcessor, label);
+    public void coherenceMethod(ImageProcessor imageProcessor, List<CircleInfo> dataFromCircularHough){
+        for (int y = 0; y < imageProcessor.getHeight(); y++){
+            for (int x = 0; x < imageProcessor.getWidth(); x++){
+                for (int label = 0; label < dataFromCircularHough.size(); label++){
+                    int i = dataFromCircularHough.get(label).getI();
+                    int j = dataFromCircularHough.get(label).getJ();
+                    int r = dataFromCircularHough.get(label).getRadi();
+                    if (imageProcessor.get(x, y) == 255 && (x-i)*(x-i) + (y-j)*(y-j) < r*r){
+                        doCoherenceFilling(x, y, imageProcessor, label);
                     }
-                    label++;
                 }
-
             }
         }
+
     }
 
     /**
      * helper function, fill the line and detect the seeds
-     * @param seed
-     * @param stack
      * @param imageProcessor
      * @param label
      */
 
-    public void doCoherenceFilling(Pair<Integer, Integer> seed, Stack<Pair<Integer, Integer>> stack, ImageProcessor imageProcessor, int label){
-        int i = seed.getKey(); int j = seed.getValue();
-        List<Pair<Integer, Integer>> testList = new ArrayList<Pair<Integer, Integer>>();
-        testList.add(getAboveSeed(i, j, imageProcessor));
-        testList.add(getBelowSeed(i, j, imageProcessor));
-        int rloffset = 0;
-        int lroffset = 0;
-        //right to left filling
-        while (imageProcessor.get(i - rloffset, j) != 0) {
-            imageProcessor.set(i - rloffset, j, label);
-            if (!getAboveSeed(i - rloffset, j, imageProcessor).equals(testList.get(0))) testList.add(0, getAboveSeed(i-rloffset, j, imageProcessor));
-            if (!getBelowSeed(i - rloffset, j, imageProcessor).equals(testList.get(testList.size() - 1))) testList.add(getBelowSeed(i-rloffset, j, imageProcessor));
-            rloffset++;
-        }
-        // left to right filling
-        while (imageProcessor.get(i + lroffset, j) != 0) {
-            imageProcessor.set(i + lroffset, j, label);
-            if (!getAboveSeed(i + lroffset, j, imageProcessor).equals(testList.get(0))) testList.add(0, getAboveSeed(i+lroffset, j, imageProcessor));
-            if (!getBelowSeed(i + lroffset, j, imageProcessor).equals(testList.get(testList.size() - 1))) testList.add(getBelowSeed(i+lroffset, j, imageProcessor));
-            lroffset++;
-        }
-        //add seed into the stack
-        for (Pair<Integer, Integer> curr : testList){
-            stack.add(curr);
+    public void doCoherenceFilling(int x, int y, ImageProcessor imageProcessor, int label){
+        Stack<Pair<Integer, Integer>> stack = new Stack<Pair<Integer, Integer>>();
+        stack.add(new Pair<Integer, Integer>(x, y));
+        while (!stack.isEmpty()){
+            Pair<Integer, Integer> curr = stack.pop();
+            int i = curr.getKey(); int j = curr.getValue();
+            int offset1 = 0;
+            int offset2 = 0;
+            while (imageProcessor.get(i+offset1, j) == 255){
+                imageProcessor.set(i+offset1, j, label);
+                if (imageProcessor.get(i+offset1, j+1) == 255)stack.add(getSeed(i+offset1, j+1, imageProcessor));
+                if (imageProcessor.get(i+offset1, j-1) == 255)stack.add(getSeed(i+offset1, j-1, imageProcessor));
+                offset1++;
+            }
+            while (imageProcessor.get(i-offset2, j) == 255){
+                imageProcessor.set(i-offset2, j, label);
+                if (imageProcessor.get(i-offset2, j+1) == 255)stack.add(getSeed(i-offset2, j+1, imageProcessor));
+                if (imageProcessor.get(i-offset2, j-1) == 255)stack.add(getSeed(i-offset2, j-1, imageProcessor));
+                offset2++;
+            }
         }
     }
 
-    public Pair<Integer, Integer> getAboveSeed(int i, int j, ImageProcessor imageProcessor){
-        j = j + 1;
-        while (imageProcessor.get(i, j) != 0) i++;
-        return new Pair<Integer, Integer>(i-1, j);
-
-    }
-
-    public  Pair<Integer, Integer> getBelowSeed(int i, int j, ImageProcessor imageProcessor){
-        j = j - 1;
-        while (imageProcessor.get(i, j) != 0) i++;
+    public Pair<Integer, Integer> getSeed(int i, int j, ImageProcessor imageProcessor){
+        while (imageProcessor.get(i, j) == 255){
+            i++;
+        }
         return new Pair<Integer, Integer>(i-1, j);
     }
+
+
 
 
     public List<CircleInfo> circularHough(){
@@ -202,7 +185,7 @@ public class Circle_Flood implements PlugInFilter{
                     if (tempForDrawingCircle.get(j, i) > 3.3 * (index + pMin) && tempForDrawingCircle.get(j, i) < 100){
                         tempForDrawingCircle.set(j, i, 255);
                         resultList.add(new CircleInfo(j, i, index + pMin));
-                        Circular_Hough.drawCircle(binaryImageProcessor, j, i, index + pMin, 200);
+                        Circular_Hough.drawCircle(binaryImageProcessor, j, i, index + pMin, 255);
                     }
                 }
             }
