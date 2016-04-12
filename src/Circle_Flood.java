@@ -9,14 +9,14 @@ import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.plugin.filter.GaussianBlur;
 import ij.process.ImageStatistics;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class Circle_Flood implements PlugInFilter{
     final int pMax = 40;
     final int pMin = 10;
-    final boolean choosingFlag = true;
+    final boolean choosingFlag = false;
     @Override
     public int setup(String s, ImagePlus imagePlus) {
         return DOES_ALL;
@@ -39,8 +39,14 @@ public class Circle_Flood implements PlugInFilter{
         imageProcessor.threshold(80);
         ImageProcessor binaryImageProcessor = imageProcessor.duplicate();
         new ImagePlus("bianry image", binaryImageProcessor).show();
-        int result = recursveFloodFill(binaryImageProcessor, dataFromCircularHough);
-        new ImagePlus(Integer.toString(result), binaryImageProcessor).show();
+        if (choosingFlag){
+            int result = recursveFloodFill(binaryImageProcessor, dataFromCircularHough);
+            new ImagePlus(Integer.toString(result), binaryImageProcessor).show();
+        }
+        else {
+            coherenceMethod(binaryImageProcessor);
+            new ImagePlus("coherence method", binaryImageProcessor).show();
+        }
     }
 
 
@@ -81,7 +87,75 @@ public class Circle_Flood implements PlugInFilter{
      * @param
      * @return
      */
-    //public ImageProcessor coherenceMethod(ImageProcessor imageProcessor){}
+    public void coherenceMethod(ImageProcessor imageProcessor){
+
+        int label = 1; //initiate the value of label
+        for (int i = 0; i < imageProcessor.getWidth(); i++){
+            for (int j = 0; j < imageProcessor.getHeight(); j++){
+                //search the seed in the whole pic
+                if (imageProcessor.get(i, j) == 255){
+                    Stack<Pair<Integer, Integer>> stack = new Stack<Pair<Integer, Integer>>();
+                    // put the original seed in the stack
+                    stack.add(new Pair<Integer, Integer>(i, j));
+                    while (!stack.isEmpty()){
+                        Pair<Integer, Integer> currPair = stack.pop();
+                        doCoherenceFilling(currPair, stack, imageProcessor, label);
+                    }
+                    label++;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * helper function, fill the line and detect the seeds
+     * @param seed
+     * @param stack
+     * @param imageProcessor
+     * @param label
+     */
+
+    public void doCoherenceFilling(Pair<Integer, Integer> seed, Stack<Pair<Integer, Integer>> stack, ImageProcessor imageProcessor, int label){
+        int i = seed.getKey(); int j = seed.getValue();
+        List<Pair<Integer, Integer>> testList = new ArrayList<Pair<Integer, Integer>>();
+        testList.add(getAboveSeed(i, j, imageProcessor));
+        testList.add(getBelowSeed(i, j, imageProcessor));
+        int rloffset = 0;
+        int lroffset = 0;
+        //right to left filling
+        while (imageProcessor.get(i - rloffset, j) != 0) {
+            imageProcessor.set(i - rloffset, j, label);
+            if (!getAboveSeed(i - rloffset, j, imageProcessor).equals(testList.get(0))) testList.add(0, getAboveSeed(i-rloffset, j, imageProcessor));
+            if (!getBelowSeed(i - rloffset, j, imageProcessor).equals(testList.get(testList.size() - 1))) testList.add(getBelowSeed(i-rloffset, j, imageProcessor));
+            rloffset++;
+        }
+        // left to right filling
+        while (imageProcessor.get(i + lroffset, j) != 0) {
+            imageProcessor.set(i + lroffset, j, label);
+            if (!getAboveSeed(i + lroffset, j, imageProcessor).equals(testList.get(0))) testList.add(0, getAboveSeed(i+lroffset, j, imageProcessor));
+            if (!getBelowSeed(i + lroffset, j, imageProcessor).equals(testList.get(testList.size() - 1))) testList.add(getBelowSeed(i+lroffset, j, imageProcessor));
+            lroffset++;
+        }
+        //add seed into the stack
+        for (Pair<Integer, Integer> curr : testList){
+            stack.add(curr);
+        }
+    }
+
+    public Pair<Integer, Integer> getAboveSeed(int i, int j, ImageProcessor imageProcessor){
+        j = j + 1;
+        while (imageProcessor.get(i, j) != 0) i++;
+        return new Pair<Integer, Integer>(i-1, j);
+
+    }
+
+    public  Pair<Integer, Integer> getBelowSeed(int i, int j, ImageProcessor imageProcessor){
+        j = j - 1;
+        while (imageProcessor.get(i, j) != 0) i++;
+        return new Pair<Integer, Integer>(i-1, j);
+    }
+
 
     public List<CircleInfo> circularHough(){
         List<CircleInfo> resultList = new ArrayList<CircleInfo>();
@@ -100,7 +174,7 @@ public class Circle_Flood implements PlugInFilter{
         for (int i = 0; i < pMax - pMin; i++){
             rList.add(imageProcessor.duplicate());
         }
-        /**
+        /*
          * change r in every duplicate imageProcessor
          * increasing rate = 1
          */
