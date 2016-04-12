@@ -36,7 +36,7 @@ public class Circle_Flood implements PlugInFilter{
         imageProcessor = imp.getProcessor().duplicate();
         imageProcessor.threshold(80);
         ImageProcessor binaryImageProcessor = imageProcessor.duplicate();
-        new ImagePlus("bianry image", binaryImageProcessor).show();
+        //new ImagePlus("bianry image", binaryImageProcessor).show();
         if (choosingFlag){
             int result = recursveFloodFill(binaryImageProcessor, dataFromCircularHough);
             new ImagePlus(Integer.toString(result), binaryImageProcessor).show();
@@ -129,6 +129,14 @@ public class Circle_Flood implements PlugInFilter{
             }
         }
     }
+
+    /**
+     * find the seed in this line
+     * @param i
+     * @param j
+     * @param imageProcessor
+     * @return
+     */
 
     public Pair<Integer, Integer> getSeed(int i, int j, ImageProcessor imageProcessor){
         while (imageProcessor.get(i, j) == 255){
