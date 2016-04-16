@@ -11,6 +11,7 @@ public class Laplacian_Edge_Detection implements PlugInFilter {
     Gradient_Magnitude gradient_magnitude = new Gradient_Magnitude();
     Laplacian_Image laplacian_image = new Laplacian_Image();
     Zero_Crossings zero_crossings = new Zero_Crossings();
+    final double threshold = 9.0;
     @Override
     public int setup(String s, ImagePlus imagePlus) {
         return DOES_ALL;
@@ -26,7 +27,7 @@ public class Laplacian_Edge_Detection implements PlugInFilter {
         FloatProcessor floatProcessor = (FloatProcessor) temp.convertToFloat();
         FloatProcessor tempForGradient = (FloatProcessor) floatProcessor.duplicate();
         gradient_magnitude.gradientMagnitude(tempForGradient, sigma);
-        setThreshold(tempForGradient, 8.0);
+        setThreshold(tempForGradient, threshold);
         new ImagePlus("after threshold", tempForGradient).show();
         FloatProcessor tempForLaplacian = (FloatProcessor) floatProcessor.duplicate();
         laplacian_image.laplacianImage(tempForLaplacian, sigma);

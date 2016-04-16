@@ -14,7 +14,7 @@ import java.util.Stack;
 public class Circle_Flood implements PlugInFilter{
     final int pMax = 40;
     final int pMin = 10;
-    final boolean choosingFlag = false;
+    final boolean choosingFlag = true;
     @Override
     public int setup(String s, ImagePlus imagePlus) {
         return DOES_ALL;

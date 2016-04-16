@@ -37,18 +37,19 @@ public class Gradient_Magnitude implements PlugInFilter{
 
         float[] kernel = makeGaussianKernel1d(sigma);
         float[] kernelDerive = deriveKernel(kernel);
+        //float[] kernelDerive = kernel;
 
         ImageProcessor xDirection = floatProcessor.duplicate();
         ImageProcessor yDirection = floatProcessor.duplicate();
 
         xDirection.convolve(kernelDerive, 1, kernelDerive.length);
         xDirection.sqr();
-        //new ImagePlus("x direction", xDirection).show();
+        new ImagePlus("x direction", xDirection).show();
         yDirection.convolve(kernelDerive, kernelDerive.length, 1);
         yDirection.sqr();
-        //new ImagePlus("y direction", yDirection).show();
+        new ImagePlus("y direction", yDirection).show();
         xDirection.copyBits(yDirection, 0, 0, Blitter.ADD);
-        //new ImagePlus("add", xDirection).show();
+        new ImagePlus("add", xDirection).show();
         xDirection.sqrt();
         //new ImagePlus("after gradient Magnitude", xDirection).show();
 
@@ -98,6 +99,7 @@ public class Gradient_Magnitude implements PlugInFilter{
         for (int i = 0; i < kernel.length; i++){
             double r = center - i;
             kernel[i] = (float) Math.exp(-0.5 * (r*r) / sigma2);
+            //kernel[i] = (float) ((Math.exp(-0.5*(r*r)/sigma2) * (-r/sigma2)));
             sum += kernel[i];
         }
         //normalize the kernel
