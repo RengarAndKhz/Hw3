@@ -13,7 +13,7 @@ import java.util.Stack;
 
 public class Circle_Flood implements PlugInFilter{
     final int pMax = 40;
-    final int pMin = 10;
+    final int pMin = 10;// coins: 10, pupils: 20
     final boolean choosingFlag = true;
     @Override
     public int setup(String s, ImagePlus imagePlus) {
